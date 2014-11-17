@@ -2,7 +2,7 @@
 
 The point of this experiment is to benchmark MRI's hash table implementation vs others to see if it can be improved upon.
 
-Right now there are two contenders:
+Right now there are three contenders:
 
 - st (not the modified one bundled with Ruby, as I wasn't able to get it to work yet.)
 - uthash (can be found [here](https://github.com/troydhanson/uthash))
