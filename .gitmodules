@@ -1,0 +1,3 @@
+[submodule "tommyds"]
+	path = tommyds
+	url = git@github.com:amadvance/tommyds.git
