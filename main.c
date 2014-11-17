@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "tommy.h"
 #include "bench.h"
@@ -109,6 +110,21 @@ bench_st_reads() {
 }
 
 void
+bench_st_random_reads() {
+  BENCHMARK(bench_st_random_reads, RUNS);
+
+  for(int i = 0; i < CYCLES; i++) {
+    int x = rand() % CYCLES;
+    st_hash_t *entry = NULL;
+
+    st_lookup(st_hash_table, (st_data_t)keys[x], (st_data_t *)&entry);
+  }
+
+  END_BENCHMARK(bench_st_random_reads);
+  MEASURE_SUMMARY(bench_st_random_reads);
+}
+
+void
 bench_st_nonexistant_reads() {
   BENCHMARK(bench_st_nonexistant_reads, RUNS);
 
@@ -162,6 +178,20 @@ bench_ut_reads() {
   MEASURE_SUMMARY(bench_ut_reads);
 }
 
+void
+bench_ut_random_reads() {
+  BENCHMARK(bench_ut_random_reads, RUNS);
+
+  for(int i = 0; i < CYCLES; i++) {
+    int x = rand() % CYCLES;
+    ut_hash_t *entry = NULL;
+
+    HASH_FIND_STR(ut_hash_table, keys[x], entry);
+  }
+
+  END_BENCHMARK(bench_ut_random_reads);
+  MEASURE_SUMMARY(bench_ut_random_reads);
+}
 
 void
 bench_ut_nonexistant_reads() {
@@ -221,6 +251,19 @@ bench_tommy_lin_reads() {
 }
 
 void
+bench_tommy_lin_random_reads() {
+  BENCHMARK(bench_tommy_lin_random_reads, RUNS);
+
+  for(int i = 0; i < CYCLES; i++) {
+    int x = rand() % CYCLES;
+    tommy_elm_t *entry = tommy_hashlin_search(tommy_lin_hash_table, &dumb_cmp, keys[x], tommy_hash_u64(0, keys[x], strlen(keys[x])));
+  }
+
+  END_BENCHMARK(bench_tommy_lin_random_reads);
+  MEASURE_SUMMARY(bench_tommy_lin_random_reads);
+}
+
+void
 bench_tommy_lin_nonexistant_reads() {
   BENCHMARK(bench_tommy_lin_nonexistant_reads, RUNS);
 
@@ -275,6 +318,19 @@ bench_tommy_dyn_reads() {
 }
 
 void
+bench_tommy_dyn_random_reads() {
+  BENCHMARK(bench_tommy_dyn_random_reads, RUNS);
+
+  for(int i = 0; i < CYCLES; i++) {
+    int x = rand() % CYCLES;
+    tommy_elm_t *entry = tommy_hashdyn_search(tommy_dyn_hash_table, &dumb_cmp, keys[x], tommy_hash_u64(0, keys[x], strlen(keys[x])));
+  }
+
+  END_BENCHMARK(bench_tommy_dyn_random_reads);
+  MEASURE_SUMMARY(bench_tommy_dyn_random_reads);
+}
+
+void
 bench_tommy_dyn_nonexistant_reads() {
   BENCHMARK(bench_tommy_dyn_nonexistant_reads, RUNS);
 
@@ -308,25 +364,31 @@ bench_tommy_dyn_writes_and_deletes() {
 
 int
 main(int argc, char **argv) {
+  srand(time(NULL));
+
   setup_keys();
 
   bench_st_writes();
   bench_st_reads();
+  bench_st_random_reads();
   bench_st_nonexistant_reads();
   bench_st_writes_and_deletes();
 
   bench_ut_writes();
   bench_ut_reads();
+  bench_ut_random_reads();
   bench_ut_nonexistant_reads();
   bench_ut_writes_and_deletes();
 
   bench_tommy_lin_writes();
   bench_tommy_lin_reads();
+  bench_tommy_lin_random_reads();
   bench_tommy_lin_nonexistant_reads();
   bench_tommy_lin_writes_and_deletes();
 
   bench_tommy_dyn_writes();
   bench_tommy_dyn_reads();
+  bench_tommy_dyn_random_reads();
   bench_tommy_dyn_nonexistant_reads();
   bench_tommy_dyn_writes_and_deletes();
 

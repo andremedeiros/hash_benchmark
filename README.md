@@ -39,6 +39,15 @@ st:               342733.92 i/sec (0.583543 seconds)
 uthash:           261664.34 i/sec (0.764338 seconds)
 ```
 
+### Random reads
+
+```
+tommy (dyn hash): 456022.31 i/sec (0.438575 seconds)
+tommy (lin hash): 300879.51 i/sec (0.664718 seconds)
+st:               203507.02 i/sec (0.982767 seconds)
+uthash:           187864.16 i/sec (1.064599 seconds)
+```
+
 ### Non-existant key reads
 
 ```
