@@ -4,63 +4,135 @@
 #include "bench.h"
 #include "st.h"
 #include "uthash.h"
+#include "structs.h"
 
-typedef struct my_struct {
-    int id;
-} my_struct_t;
+#define RUNS   2
+#define CYCLES 100
 
-typedef struct my_struct1 {
-    int id;
-    UT_hash_handle hh;
-} my_struct1_t;
+char *keys[CYCLES],
+     *other_keys[CYCLES];
 
-float t1_wall, t1_cpu, t2_wall, t2_cpu;
+st_table  *st_hash_table;
+ut_hash_t *ut_hash_table = NULL;
 
-int main(int argc, char **argv) {
-  char *keys[1000000];
-
-  for(unsigned long i = 0; i < 1000000; i++) {
+void
+setup_keys() {
+  for(int i = 0; i < CYCLES; i++) {
     keys[i] = (char *)malloc(1024);
-    sprintf(keys[i], "key_%lu", i);
+    sprintf(keys[i], "key_%d", i);
+
+    other_keys[i] = (char *)malloc(1024);
+    sprintf(other_keys[i], "other_key_%d", i);
+  }
+}
+
+st_table *
+setup_st_hash_table() {
+  st_table *hash_table = st_init_strtable();
+  for(int i = 0; i < CYCLES; i++) {
+    st_hash_t entry = {.id = 1};
+    st_insert(hash_table, (st_data_t)strdup(keys[i]), (st_data_t)&entry);
   }
 
-  // ST: Writes ---------------------------------------------------------------
+  return hash_table;
+}
 
-  t1_wall = wall();
-  t1_cpu = cpu();
-
-  st_table *foo = st_init_strtable_with_size(64);
-
-  for(unsigned long i = 0; i < 1000000; i++) {
-    my_struct_t *entry = (my_struct_t *)malloc(sizeof(my_struct_t));
+ut_hash_t *
+setup_ut_hash_table() {
+  ut_hash_t *hash_table = NULL;
+  for(int i = 0; i < CYCLES; i++) {
+    ut_hash_t *entry = (ut_hash_t *)malloc(sizeof(ut_hash_t));
     entry->id = 1;
-    st_insert(foo, (st_data_t)strdup(keys[i]), (st_data_t)entry);
+
+    HASH_ADD_KEYPTR(hh, hash_table, keys[i], strlen(keys[i]), entry);
   }
 
-  struct my_struct1 *entries = NULL;
+  return hash_table;
+}
 
-  t2_wall = wall();
-  t2_cpu = cpu();
+void
+bench_st_writes() {
+  BENCHMARK(bench_st_writes, RUNS);
 
-  printf("st time (wall):     %2.2f\n", t2_wall - t1_wall);
-  printf("st time (cpu):      %2.2f\n", t2_cpu - t1_cpu);
+  st_hash_table = setup_st_hash_table();
 
-  // -------------------------------------------------------------------------
+  END_BENCHMARK(bench_st_writes);
+  MEASURE_SUMMARY(bench_st_writes);
+}
 
-  t1_wall = wall();
-  t1_cpu = cpu();
+void
+bench_st_reads() {
+  BENCHMARK(bench_st_reads, RUNS);
 
-  for(unsigned long i = 0; i < 1000000; i++) {
-    my_struct1_t *entry = (my_struct1_t *)malloc(sizeof(my_struct1_t));
-    entry->id = 1;
-    HASH_ADD_KEYPTR(hh, entries, keys[i], strlen(keys[i]), entry);
+  for(int i = 0; i < CYCLES; i++) {
+    st_hash_t *entry = NULL;
+    st_lookup(st_hash_table, (st_data_t)keys[i], (st_data_t *)&entry);
   }
 
-  t2_wall = wall();
-  t2_cpu = cpu();
+  END_BENCHMARK(bench_st_reads);
+  MEASURE_SUMMARY(bench_st_reads);
+}
 
-  printf("uthash time (wall): %2.2f\n", t2_wall - t1_wall);
-  printf("uthash time (cpu):  %2.2f\n", t2_cpu - t1_cpu);
+void
+bench_st_nonexistant_reads() {
+  BENCHMARK(bench_st_nonexistant_reads, RUNS);
 
+  for(int i = 0; i < CYCLES; i++) {
+    st_hash_t *entry = NULL;
+    st_lookup(st_hash_table, (st_data_t)other_keys[i], (st_data_t *)&entry);
+  }
+
+  END_BENCHMARK(bench_st_nonexistant_reads);
+  MEASURE_SUMMARY(bench_st_nonexistant_reads);
+}
+
+void
+bench_ut_writes() {
+  BENCHMARK(bench_ut_writes, RUNS);
+
+  ut_hash_table = setup_ut_hash_table();
+
+  END_BENCHMARK(bench_ut_writes);
+  MEASURE_SUMMARY(bench_ut_writes);
+}
+
+void
+bench_ut_reads() {
+  BENCHMARK(bench_ut_reads, RUNS);
+
+  for(int i = 0; i < CYCLES; i++) {
+    ut_hash_t *entry = NULL;
+    HASH_FIND_STR(ut_hash_table, keys[i], entry);
+  }
+
+  END_BENCHMARK(bench_ut_reads);
+  MEASURE_SUMMARY(bench_ut_reads);
+}
+
+
+void
+bench_ut_nonexistant_reads() {
+  BENCHMARK(bench_ut_nonexistant_reads, RUNS);
+
+  for(int i = 0; i < CYCLES; i++) {
+    ut_hash_t *entry = NULL;
+    HASH_FIND_STR(ut_hash_table, other_keys[i], entry);
+  }
+
+  END_BENCHMARK(bench_ut_nonexistant_reads);
+  MEASURE_SUMMARY(bench_ut_nonexistant_reads);
+}
+
+int
+main(int argc, char **argv) {
+  setup_keys();
+
+  bench_st_writes();
+  bench_st_reads();
+  bench_st_nonexistant_reads();
+
+  bench_ut_writes();
+  bench_ut_reads();
+  bench_ut_nonexistant_reads();
   return 0;
 }

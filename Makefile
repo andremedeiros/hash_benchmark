@@ -1,2 +1,2 @@
 all:
-	gcc st.c main.c -ljemalloc -o test
+	gcc st.c bench.c main.c -ljemalloc -O3 -o test
