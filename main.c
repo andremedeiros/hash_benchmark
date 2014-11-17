@@ -17,17 +17,19 @@ typedef struct my_struct1 {
 float t1_wall, t1_cpu, t2_wall, t2_cpu;
 
 int main(int argc, char **argv) {
-  t1_wall = wall();
-  t1_cpu = cpu();
-
-  st_table *foo = st_init_strtable_with_size(64);
-
   char *keys[1000000];
 
   for(unsigned long i = 0; i < 1000000; i++) {
     keys[i] = (char *)malloc(1024);
     sprintf(keys[i], "key_%lu", i);
   }
+
+  // ST: Writes ---------------------------------------------------------------
+
+  t1_wall = wall();
+  t1_cpu = cpu();
+
+  st_table *foo = st_init_strtable_with_size(64);
 
   for(unsigned long i = 0; i < 1000000; i++) {
     my_struct_t *entry = (my_struct_t *)malloc(sizeof(my_struct_t));
