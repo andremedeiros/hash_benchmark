@@ -1,15 +1,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "tommy.h"
 #include "bench.h"
 #include "st.h"
 #include "uthash.h"
 #include "structs.h"
+#include "khash.h"
 
 #define RUNS   2
 #define CYCLES 100
+
+KHASH_MAP_INIT_STR(rhash, void *)
+
 
 char *keys[CYCLES],
      *other_keys[CYCLES];
@@ -18,6 +23,7 @@ st_table  *st_hash_table;
 ut_hash_t *ut_hash_table = NULL;
 tommy_hashlin *tommy_lin_hash_table;
 tommy_hashdyn *tommy_dyn_hash_table;
+khash_t(rhash) *khash_hash_table;
 
 void
 setup_keys() {
@@ -81,6 +87,23 @@ setup_tommy_dyn_hash_table() {
     entry->id = i;
 
     tommy_hashdyn_insert(hash_table, &entry->node, entry, tommy_hash_u32(0, keys[i], strlen(keys[i])));
+  }
+
+  return hash_table;
+}
+
+khash_t(rhash) *
+setup_khash_hash_table() {
+  khash_t(rhash) *hash_table = kh_init(rhash);
+  int ret;
+  khiter_t k;
+
+  for(int i = 0; i < CYCLES; i++) {
+    st_hash_t *entry = (st_hash_t *)malloc(sizeof(st_hash_t));
+    entry->id = i;
+
+    k = kh_put(rhash, hash_table, keys[i], &ret);
+    kh_value(hash_table, k) = entry;
   }
 
   return hash_table;
@@ -362,6 +385,89 @@ bench_tommy_dyn_writes_and_deletes() {
   MEASURE_SUMMARY(bench_tommy_dyn_writes_and_deletes);
 }
 
+void
+bench_khash_writes() {
+  BENCHMARK(bench_khash_writes, RUNS);
+
+  khash_hash_table = setup_khash_hash_table();
+
+  END_BENCHMARK(bench_khash_writes);
+  MEASURE_SUMMARY(bench_khash_writes);
+}
+
+void
+bench_khash_reads() {
+  int bleh;
+  BENCHMARK(bench_khash_reads, RUNS);
+
+  khiter_t k;
+  for(int i = 0; i < CYCLES; i++) {
+    k = kh_get(rhash, khash_hash_table, keys[i]);
+    st_hash_t *entry = kh_value(khash_hash_table, k);
+    bleh = entry->id;
+  }
+  END_BENCHMARK(bench_khash_reads);
+  MEASURE_SUMMARY(bench_khash_reads);
+  printf("i: %d\n", bleh); // Make sure the compiler doesn't optimize value
+                           // retrieval away.
+}
+
+void
+bench_khash_random_reads() {
+  int bleh;
+  BENCHMARK(bench_khash_random_reads, RUNS);
+
+  khiter_t k;
+  for(int i = 0; i < CYCLES; i++) {
+    int x = rand() % CYCLES;
+    k = kh_get(rhash, khash_hash_table, keys[x]);
+    st_hash_t *entry = kh_value(khash_hash_table, k);
+    bleh = entry->id;
+  }
+  END_BENCHMARK(bench_khash_random_reads);
+  MEASURE_SUMMARY(bench_khash_random_reads);
+  printf("i: %d\n", bleh); // Make sure the compiler doesn't optimize value
+                           // retrieval away.
+}
+
+void
+bench_khash_nonexistant_reads() {
+  bool is_missing = true;
+  BENCHMARK(bench_khash_nonexistant_reads, RUNS);
+
+  khiter_t k;
+  for(int i = 0; i < CYCLES; i++) {
+    k = kh_get(rhash, khash_hash_table, other_keys[i]);
+    is_missing = is_missing && (k == kh_end(khash_hash_table));
+  }
+  END_BENCHMARK(bench_khash_nonexistant_reads);
+  MEASURE_SUMMARY(bench_khash_nonexistant_reads);
+  printf("%d\n", is_missing);
+}
+
+void
+bench_khash_writes_and_deletes() {
+  khash_t(rhash) *hash_table = kh_init(rhash);
+
+  st_hash_t entry = {.id = 1};
+
+  char *key = malloc(7);
+  strcpy(key, "object");
+  int ret;
+  khiter_t k;
+
+  BENCHMARK(bench_khash_writes_and_deletes, RUNS);
+
+  k = kh_put(rhash, hash_table, key, &ret);
+  kh_value(hash_table, k) = &entry;
+
+  k = kh_get(rhash, hash_table, key);
+  kh_del(rhash, hash_table, k);
+
+  END_BENCHMARK(bench_khash_writes_and_deletes);
+  MEASURE_SUMMARY(bench_khash_writes_and_deletes);
+}
+
 int
 main(int argc, char **argv) {
   srand(time(NULL));
@@ -391,6 +497,12 @@ main(int argc, char **argv) {
   bench_tommy_dyn_random_reads();
   bench_tommy_dyn_nonexistant_reads();
   bench_tommy_dyn_writes_and_deletes();
+
+  bench_khash_writes();
+  bench_khash_reads();
+  bench_khash_random_reads();
+  bench_khash_nonexistant_reads();
+  bench_khash_writes_and_deletes();
 
   return 0;
 }
