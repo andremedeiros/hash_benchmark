@@ -7,6 +7,7 @@ Right now there are three contenders:
 - st (not the modified one bundled with Ruby, as I wasn't able to get it to work yet.)
 - uthash (can be found [here](https://github.com/troydhanson/uthash))
 - tommy hash (can be found [here](http://tommyds.sourceforge.net))
+- khash (can be found [here](https://github.com/attractivechaos/klib/blob/master/khash.h))
 
 Code is compiled with `-O3` and binds to `jemalloc`
 
